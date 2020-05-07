@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Equations</title>
+		<link rel="stylesheet" href="./style.css" />
+		<script src="./graphics.js"></script>
+		<script src="./arraysExtended.js"></script>
+	</head>
+	<body>
+		<header>
+			<h1>Численное интегрирование.JS</h1>
+			<p>Отработка адаптивного шага</p>
+		</header>
+		<main>
+			<div class="solve-graphic">
+				<canvas
+					class="solve-graphic__canvas"
+					width="1250"
+					height="750">
+				</canvas>
+			</div>
+		</main>
+	</body>
+	<script>
+		window.addEventListener('DOMContentLoaded', () => {
+			const testFunc = x => {
+				const dX = 0.1 * x * x + 0.02
+				return (0.2 *x / (dX * dX)) * Math.sin(1/dX)
+			}
+			
+			const testPrime = x => Math.cos(1 / (0.1 * x *x + 0.02))
+			
+			const range = ArrayExtended.getInterval(-5, 0, 750)
+			const funcValues = ArrayExtended.extendArray(range.map(x => testPrime(x)))
+			
+			const oneStep = (func, X, dT) => {
+				K0 = func(X)
+				K1 = func(X + dT)
+				return 0.5 * dT * (K0 + K1)
+			}
+			
+			const integrate = (Y0, X0, func, dT, Xmax) => {
+				let X = X0
+				let Y = Y0
+				let i = 0
+				let dTx = dT
+
+				result = [{X, Y}]
+				while(X < Xmax) {
+					const dY = oneStep(func, result[i].X, dTx)
+					const Y = result[i].Y + dY
+					X += dTx
+				
+					const dY_05_1 = oneStep(func, result[i].X, dTx/2)
+					const dY_05_2 = oneStep(func, result[i].X + dTx/2, dTx/2)
+					delta = (Y - (result[i].Y + dY_05_1 + dY_05_1))/3
+					if(Math.abs(delta) > 1E-3) {
+						dTx *= 0.5
+					} else {
+						const Y2 = result[i].Y + oneStep(func, result[i].X, dTx * 2)
+						const dY1 = oneStep(func, result[i].X + dTx, dTx)
+						delta = (Y2 - (Y + dY1))/3
+						if(Math.abs(delta) < 1E-3) {
+							dTx *= 2
+						}
+					}
+														
+					i++
+					result.push({X, Y})					
+				}
+				return result
+			}
+			
+			const testIntegrResult = integrate(testPrime(-3.5), -3.5, testFunc, 0.01,  -0.75)
+			iMax = testIntegrResult.length - 1
+			const X1 = testIntegrResult[iMax].X
+			const Y1 = testIntegrResult[iMax].Y
+			console.log(100*((testPrime(X1) - testPrime(-3.5)) - (Y1 - testPrime(-3.5)))/(testPrime(X1) - testPrime(-3.5)))
+			console.log(testIntegrResult)
+			
+			const {xArr, yArr} = testIntegrResult.reduce((res, item) => {
+				res.xArr.push(item.X)
+				res.yArr.push(item.Y)
+				return res
+			}, {xArr: [], yArr: []})
+			
+			const testGrapher = new grapher()
+			testGrapher
+				.init( document.querySelector('canvas' ))
+				.drawGraphic(
+					range,
+					funcValues
+				)
+				.drawPoints(
+					xArr,
+					yArr
+				)
+
+		})
+	</script>
+</html>
